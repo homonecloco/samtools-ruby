@@ -5,10 +5,27 @@ require "bio/db/sam/sam"
 
 class TestBioDbSam < Test::Unit::TestCase
 
-
+  #Set up the paths
   def setup
-    @testTAMFile                 = "test/samples/small/test.tam"
-    @testBAMFile                 = "test/samples/small/testu.bam"
+    @test_folder                = "test/samples/small"
+    @testTAMFile                = @test_folder + "/test.tam"
+    @testBAMFile                = @test_folder + "/testu.bam"
+    @testReference              = @test_folder + "/test_chr.fasta"
+    
+  end
+  
+  #Removing the index files
+  def teardown
+    begin
+      File.delete(@testReference + ".fai")
+      p "deleted: " + @testReference + ".fai "
+    rescue
+    end
+    begin
+      File.delete(@testBAMFile + ".fai")
+      p "deleted: " + @testBAMFile + ".bai "
+    rescue
+    end
   end
 
   def default_test
@@ -105,7 +122,7 @@ class TestBioDbSam < Test::Unit::TestCase
     begin
       sam       = Bio::DB::Sam.new({:tam=>@testTAMFile})
       sam.open
-       sam.load_index
+      sam.load_index
       sam.close
       assert(false, "TAM index loaded")
     rescue Bio::DB::SAMException => e
@@ -116,10 +133,24 @@ class TestBioDbSam < Test::Unit::TestCase
   def test_read_segment
     sam       = Bio::DB::Sam.new({:bam=>@testBAMFile})
     sam.open
-    als = sam. fetch("chr_1", 0, 500)
+    als = sam.fetch("chr_1", 0, 500)
+    p als 
     sam.close
     assert(true, "Seems it ran the query")
     #node_7263       238     60 has 550+, query from 0 to 500, something shall come.... 
   end
+
+  def test_fasta_load_index
+    sam = Bio::DB::Sam.new({:fasta=>@testReference})
+  
+    sam.load_reference
+    
+    seq = sam.fetch_reference("chr_1", 0, 500)
+    p seq 
+    sam.close
+    assert(true, "The reference was loaded")
+  end
+  
+  
 
 end

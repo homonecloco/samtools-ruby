@@ -1,0 +1,10 @@
+samtools-ruby
+
+
+
+
+
+Dependencies:
+-FFI
+-libbam
+	This can be obtained from samtools. 

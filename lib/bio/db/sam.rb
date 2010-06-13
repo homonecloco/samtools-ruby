@@ -15,26 +15,28 @@ module Bio
         bam = opts[:bam]
         tam = opts[:tam]
 
-        if bam == nil && tam == nil then
-          raise SAMException.new(), "No alignment file"
+        if bam == nil && tam == nil && @fasta_path == nil then
+          raise SAMException.new(), "No alignment or reference file"
         elsif bam != nil && tam != nil then
           raise SAMException.new(), "Alignment has to be in either text or binary format, not both"
         elsif bam != nil then
           @binary = true
           @sam = bam     
-        else
+        elsif tam != nil then
           @sam = tam     
           @binary = false
+          
         end
-        @sam_file = nil
+        @fasta_file = nil
+        @sam_file   = nil
 
         ObjectSpace.define_finalizer(self,  self.class.method(:finalize).to_proc)
       end
 
       def open()
-        if(@write)
-          raise SAMException.new(), "Writing not supported"
-        end
+      
+        raise SAMException.new(), "Writing not supported yet" if @write
+        raise SAMException.new(), "No SAM file specified" unless @sam 
 
         opts = @write ? "w" : "r"
         if @binary then  
@@ -55,7 +57,8 @@ module Bio
           @sam_file = nil
           raise SAMException.new(), "File not opened:  " + @sam
         end
-        @sam_file = Bio::DB::SAM::Tools::SamfileT.new(samFile)    
+        @sam_file = Bio::DB::SAM::Tools::SamfileT.new(samFile)
+                      
       end
 
       def to_s()
@@ -63,10 +66,11 @@ module Bio
       end
 
       def close()
-
+        Bio::DB::SAM::Tools.fai_destroy(@fasta_index) unless @fasta_index.nil? || @fasta_index.null?
         Bio::DB::SAM::Tools.bam_index_destroy(@sam_index) unless @sam_index.nil? || @sam_index.null?
         Bio::DB::SAM::Tools.samclose(@sam_file) unless @sam_file.nil? 
         @sam_file = nil
+        @fasta_index = nil
       end
 
       def Sam.finalize(id)
@@ -78,21 +82,45 @@ module Bio
         raise SAMException.new(), "Indexes are only supported by BAM files, please use samtools to convert your SAM file" unless @binary
         @sam_index = Bio::DB::SAM::Tools.bam_index_load(@sam)
         if @sam_index.null? then
-          p "Generatind index for: " + @sam
+          p "Generating index for: " + @sam
           Bio::DB::SAM::Tools.bam_index_build(@sam)
           @sam_index = Bio::DB::SAM::Tools.bam_index_load(@sam)
-          raise SAMException.new(), "Unable to generate bam index for: " + @sam if @sam_index.null?
+          raise SAMException.new(), "Unable to generate bam index for: " + @sam if @sam_index.nil? || @sam_index.null?
         end
       end
-
       
+      def load_reference()
+        raise SAMException.new(), "No path for the refernce fasta file. " if @fasta_path.nil?
+        @fasta_index = Bio::DB::SAM::Tools.fai_load(@fasta_path)
+      
+        if @fasta_index.null? then
+          p "Generating index for: " + @fasta_path
+          Bio::DB::SAM::Tools.fai_build(@fasta_path)
+          @fasta_index =  Bio::DB::SAM::Tools.fai_load(@fasta_path)
+          raise SAMException.new(), "Unable to generate fasta index for: " + @fasta_path if @fasta_index.nil? ||  @fasta_index.null?
+        end
+        
+      end
+      
+      def fetch_reference(chromosome, qstart,qend)
+        load_reference unless @fasta_index.nil? || @fasta_index.null? 
+        query = query_string(chromosome, qstart,qend)
+        len = FFI::MemoryPointer.new :int
+        reference = Bio::DB::SAM::Tools.fai_fetch(@fasta_index, query, len)
+        reference
+      end
+      
+      def query_string(chromosome, qstart,qend)
+         query = chromosome + ":" + qstart.to_s + "-" + qend.to_s 
+         query
+      end
       
       def fetch(chromosome, qstart, qend)
         load_index if @sam_index.nil? || @sam_index.null?
         chr = FFI::MemoryPointer.new :int
         beg = FFI::MemoryPointer.new :int
         last = FFI::MemoryPointer.new :int
-        query =   chromosome+":"+qstart.to_s+"-"+qend.to_s 
+        query = query_string(chromosome, qstart,qend)
         qpointer = FFI::MemoryPointer.from_string(query)
         header = @sam_file[:header]
         Bio::DB::SAM::Tools.bam_parse_region(header,qpointer, chr, beg, last) 
@@ -101,16 +129,14 @@ module Bio
           alignment =  Alignment.new
           alignment.set(bam_alignment, header)
           als.push(alignment)   
-          als 
-	  0  
+	        0  
         end
         Bio::DB::SAM::Tools.bam_fetch(@sam_file[:x][:bam], @sam_index,chr.read_int,beg.read_int, last.read_int, nil, fetchAlignment)
-       # p als
-        #puts "Iterated"
         als
       end    
 
     end
+    
     class Tag
       attr_accessor :tag, :type, :value
       def set(str)
@@ -122,36 +148,53 @@ module Bio
     end
     
     class Alignment
-       attr_accessor :qname, :flag, :rname,:pos,:mapq,:cigar, :mrnm, :mpos, :isize, :seq, :qual, :tags, :calend, :qlen
+       #Attributes from the format
+       attr_accessor :qname, :flag, :rname,:pos,:mapq,:cigar, :mrnm, :mpos, :isize, :seq, :qual, :tags
+       #Attributes pulled with the C library
+       attr_accessor  :calend, :qlen
+       #Attrobites frp, the flag field (see chapter 2.2.2 of the sam file documentation)
+       attr_accessor :is_paired, :is_mapped, :query_unmapped, :mate_unmapped, :query_strand_reverse, :mate_strand_reverse, :first_in_pair,:second_in_pair, :not_primary, :failed_quality, :is_duplicate
        
        def set(bam_alignment, header)
+         #Create the FFI object
          al = Bio::DB::SAM::Tools::Bam1T.new(bam_alignment) 
+         
+         #set the raw data
          self.sam =  Bio::DB::SAM::Tools.bam_format1(header,al)
+         
+         #Set values calculated by libbam
          core = al[:core]
-          cigar = al[:data][core[:l_qname]]#define bam1_cigar(b) ((uint32_t*)((b)->data + (b)->core.l_qname))
-      
-          
+         cigar = al[:data][core[:l_qname]]#define bam1_cigar(b) ((uint32_t*)((b)->data + (b)->core.l_qname)) 
          @calend = Bio::DB::SAM::Tools.bam_calend(core,cigar)
          @qlen = Bio::DB::SAM::Tools.bam_cigar2qlen(core,cigar)
          
+         #process the flags
+         @is_paired             = @flag & 0x0001 > 0
+         @is_mapped             = @flag & 0x0002 > 0
+         @query_unmapped        = @flag & 0x0004 > 0
+         @mate_unmapped         = @flag & 0x0008 > 0
+         @query_strand_reverse  = @flag & 0x0010 > 0
+         @mate_strand_reverse   = @flag & 0x0020 > 0
+         @first_in_pair         = @flag & 0x0040 > 0
+         @second_in_pair        = @flag & 0x0080 > 0
+         @not_primary           = @flag & 0x0100 > 0
+         @failed_quality        = @flag & 0x0200 > 0
+         @is_duplicate          = @flag & 0x0400 > 0
        end
        
-    #   def sam
-     #      @sam
-      # end
-       
+           
        def sam=(sam)
-           p sam
+           #p sam
            s = sam.split("\t")
            self.qname = s[0]
-           self.flag  = s[1]
+           self.flag  = s[1].to_i
            self.rname = s[2]
-           self.pos   = s[3]
-           self.mapq  = s[4]
+           self.pos   = s[3].to_i
+           self.mapq  = s[4].to_i
            self.cigar = s[5]
            self.mrnm  = s[6]
-           self.mpos  = s[7]
-           self.isize = s[8]
+           self.mpos  = s[7].to_i
+           self.isize = s[8].to_i
            self.seq   = s[9]
            self.qual =  s[10]
            self.tags = {} 
