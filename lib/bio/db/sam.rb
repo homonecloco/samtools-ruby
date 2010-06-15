@@ -124,6 +124,7 @@ module Bio
         qpointer = FFI::MemoryPointer.from_string(query)
         header = @sam_file[:header]
         Bio::DB::SAM::Tools.bam_parse_region(header,qpointer, chr, beg, last) 
+        raise SAMException.new(), "invalid query: " + query  if(chr.read_int < 0)
         als = Array.new
         fetchAlignment = Proc.new do |bam_alignment, data|
           alignment =  Alignment.new

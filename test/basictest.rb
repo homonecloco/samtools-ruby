@@ -140,11 +140,65 @@ class TestBioDbSam < Test::Unit::TestCase
     #node_7263       238     60 has 550+, query from 0 to 500, something shall come.... 
   end
 
+  def test_read_invalid_reference
+    sam       = Bio::DB::Sam.new({:bam=>@testBAMFile})
+    sam.open
+    begin
+      als = sam.fetch("Chr1", 0, 500)
+      p als 
+      sam.close
+      assert(false, "Seems it ran the query")
+    rescue Bio::DB::SAMException => e
+      p e
+      assert(true, "Exception generated and catched")
+    end
+  end
+
+  def test_read_invalid_reference_start_coordinate
+    sam       = Bio::DB::Sam.new({:bam=>@testBAMFile})
+    sam.open
+    begin
+      als = sam.fetch("chr", -1, 500)
+      p als 
+      sam.close
+      assert(false, "Seems it ran the query")
+    rescue Bio::DB::SAMException => e
+      p e
+      assert(true, "Exception generated and catched")
+    end
+  end
+
+  def test_read_invalid_reference_end_coordinate
+    sam       = Bio::DB::Sam.new({:bam=>@testBAMFile})
+    sam.open
+    begin
+      als = sam.fetch("chr", 0, 50000)
+      p als 
+      sam.close
+      assert(false, "Seems it ran the query")
+    rescue  Bio::DB::SAMException => e
+      p e
+      assert(true, "Exception generated and catched")
+    end
+  end
+  
+  def test_read_invalid_reference_swaped_coordinates
+    sam       = Bio::DB::Sam.new({:bam=>@testBAMFile})
+    sam.open
+    begin
+      als = sam.fetch("chr", 500, 0)
+      p als 
+      sam.close
+      assert(false, "Seems it ran the query")
+    rescue  Bio::DB::SAMException => e
+      p e
+      assert(true, "Exception generated and catched")
+    end
+  end
+
   def test_fasta_load_index
     sam = Bio::DB::Sam.new({:fasta=>@testReference})
-  
     sam.load_reference
-    
     seq = sam.fetch_reference("chr_1", 0, 500)
     p seq 
     sam.close
