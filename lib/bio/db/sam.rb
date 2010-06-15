@@ -133,7 +133,11 @@ module Bio
         end
         Bio::DB::SAM::Tools.bam_fetch(@sam_file[:x][:bam], @sam_index,chr.read_int,beg.read_int, last.read_int, nil, fetchAlignment)
         als
-      end    
+      end  
+      
+      def fetch_with_condition(chromosome, qstart, qend, condition)
+        
+      end
 
     end
     
@@ -153,7 +157,9 @@ module Bio
        #Attributes pulled with the C library
        attr_accessor  :calend, :qlen
        #Attrobites frp, the flag field (see chapter 2.2.2 of the sam file documentation)
-       attr_accessor :is_paired, :is_mapped, :query_unmapped, :mate_unmapped, :query_strand_reverse, :mate_strand_reverse, :first_in_pair,:second_in_pair, :not_primary, :failed_quality, :is_duplicate
+       #query_strand and mate_strand are true if they are forward. It is the opposite to the definition in the BAM format for clarity.
+       #primary is the negation of is_negative from the BAM format
+       attr_accessor :is_paired, :is_mapped, :query_unmapped, :mate_unmapped, :query_strand, :mate_strand, :first_in_pair,:second_in_pair, :primary, :failed_quality, :is_duplicate
        
        def set(bam_alignment, header)
          #Create the FFI object
@@ -173,11 +179,11 @@ module Bio
          @is_mapped             = @flag & 0x0002 > 0
          @query_unmapped        = @flag & 0x0004 > 0
          @mate_unmapped         = @flag & 0x0008 > 0
-         @query_strand_reverse  = @flag & 0x0010 > 0
-         @mate_strand_reverse   = @flag & 0x0020 > 0
+         @query_strand          = !(@flag & 0x0010 > 0)
+         @mate_strand           = !(@flag & 0x0020 > 0)
          @first_in_pair         = @flag & 0x0040 > 0
          @second_in_pair        = @flag & 0x0080 > 0
-         @not_primary           = @flag & 0x0100 > 0
+         @primary               = !(@flag & 0x0100 > 0)
          @failed_quality        = @flag & 0x0200 > 0
          @is_duplicate          = @flag & 0x0400 > 0
        end
