@@ -107,6 +107,7 @@ module Bio
         query = query_string(chromosome, qstart,qend)
         len = FFI::MemoryPointer.new :int
         reference = Bio::DB::SAM::Tools.fai_fetch(@fasta_index, query, len)
+        raise SAMException.new(), "Unable to get sequence for reference: "+query if reference.nil?
         reference
       end
       

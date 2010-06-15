@@ -205,6 +205,18 @@ class TestBioDbSam < Test::Unit::TestCase
     assert(true, "The reference was loaded")
   end
   
-  
+  def test_fasta_load_index
+    sam = Bio::DB::Sam.new({:fasta=>@testReference})
+    sam.load_reference
+    begin
+      seq = sam.fetch_reference("chr1", 0, 500)
+      p "Error seq:"+ seq 
+      sam.close
+      assert(false, "The reference was loaded")
+    rescue Bio::DB::SAMException => e
+      p e
+      assert(true,  "The references was not loaded")
+    end
+  end
 
 end
