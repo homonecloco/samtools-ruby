@@ -23,7 +23,7 @@ Then, run
 
 make dylib
 
-Finally, you copy the .dylib file to your lib folder.
+Finally, you copy the .dylib file to your lib folder. 
 
 Usage
 The easiest way to see in "action" samtools-ruby to call
@@ -34,6 +34,9 @@ Dependencies:
 -FFI (http://github.com/ffi/ffi)
 -libbam
 	This can be obtained from samtools.  (http://samtools.sourceforge.net/ )
+
+LICENSE
+This wrapper is available under GPLv3. 
 	
 FAQ.
 I´m getting a segmentation Fault, what did I do wrong?
@@ -48,3 +51,4 @@ Ricardo dot Ramirez-Gonzalez at bbsrc dot ac dot uk
 TODO
 -Write a gem to install it
 -Filter to the fetching algorithm (give a condition that has to be satisfied to add the alignment to the list)
+-Examples of how to use it, besides the test folder

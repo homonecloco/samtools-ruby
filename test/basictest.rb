@@ -1,7 +1,9 @@
 $: << File.expand_path(File.dirname(__FILE__) + '/../lib')
+$: << File.expand_path('.')
 require "test/unit"
 require "bio/db/sam"
 require "bio/db/sam/sam"
+
 
 class TestBioDbSam < Test::Unit::TestCase
 
@@ -218,5 +220,39 @@ class TestBioDbSam < Test::Unit::TestCase
       assert(true,  "The references was not loaded")
     end
   end
+  
+  def test_load_feature
+    
+    fs = Feature.find_by_bam("chr_1", 0, 500,@testBAMFile)
+    
+    p fs
+    assert(true, "Loaded as features")
+  end
 
+end
+
+class Feature 
+attr_reader :start, :end, :strand, :sequence, :quality
+
+def initialize(a={})
+  p a
+  @start = a[:start]
+  @end = a[:enf]
+  @strand = a[:strand]
+  @sequence = a[:sequence]
+  @quality = a[:quality]
+end
+
+def self.find_by_bam(reference,start,stop,bam_file_path)
+  
+  sam = Bio::DB::Sam.new({:bam=>bam_file_path})
+  features = []
+  sam.open
+  sam.fetch(reference, start, stop).each do |a|
+    a.query_strand ? strand = '+'  : strand = '-'
+    features << Feature.new({:start=>a.pos,:end=>a.calend,:strand=>strand,:sequence=>a.seq,:quality=>a.qual})
+  end
+  sam.close
+  features
+end
 end

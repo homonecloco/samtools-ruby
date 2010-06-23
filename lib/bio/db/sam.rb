@@ -117,6 +117,16 @@ module Bio
       end
       
       def fetch(chromosome, qstart, qend)
+        als = Array.new
+        fetchAlignment = Proc.new do |alignment|
+          als.push(alignment)   
+	        0  
+        end
+        fetch_with_function(chromosome, qstart, qend, fetchAlignment)
+        als
+      end  
+      
+      def fetch_with_function(chromosome, qstart, qend, function)
         load_index if @sam_index.nil? || @sam_index.null?
         chr = FFI::MemoryPointer.new :int
         beg = FFI::MemoryPointer.new :int
@@ -126,19 +136,16 @@ module Bio
         header = @sam_file[:header]
         Bio::DB::SAM::Tools.bam_parse_region(header,qpointer, chr, beg, last) 
         raise SAMException.new(), "invalid query: " + query  if(chr.read_int < 0)
-        als = Array.new
+        count = 0;
         fetchAlignment = Proc.new do |bam_alignment, data|
           alignment =  Alignment.new
           alignment.set(bam_alignment, header)
-          als.push(alignment)   
+          function.call(alignment)
+          count = count + 1
 	        0  
         end
         Bio::DB::SAM::Tools.bam_fetch(@sam_file[:x][:bam], @sam_index,chr.read_int,beg.read_int, last.read_int, nil, fetchAlignment)
-        als
-      end  
-      
-      def fetch_with_condition(chromosome, qstart, qend, condition)
-        
+        count
       end
 
     end
