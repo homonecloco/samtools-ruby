@@ -119,7 +119,7 @@ module Bio
       def fetch(chromosome, qstart, qend)
         als = Array.new
         fetchAlignment = Proc.new do |alignment|
-          als.push(alignment)   
+          als.push(alignment.clone)   
 	        0  
         end
         fetch_with_function(chromosome, qstart, qend, fetchAlignment)
@@ -137,8 +137,8 @@ module Bio
         Bio::DB::SAM::Tools.bam_parse_region(header,qpointer, chr, beg, last) 
         raise SAMException.new(), "invalid query: " + query  if(chr.read_int < 0)
         count = 0;
+        alignment =  Alignment.new
         fetchAlignment = Proc.new do |bam_alignment, data|
-          alignment =  Alignment.new
           alignment.set(bam_alignment, header)
           function.call(alignment)
           count = count + 1

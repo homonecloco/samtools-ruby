@@ -248,10 +248,12 @@ def self.find_by_bam(reference,start,stop,bam_file_path)
   sam = Bio::DB::Sam.new({:bam=>bam_file_path})
   features = []
   sam.open
-  sam.fetch(reference, start, stop).each do |a|
+  
+  fetchAlignment = Proc.new do |a|
     a.query_strand ? strand = '+'  : strand = '-'
     features << Feature.new({:start=>a.pos,:end=>a.calend,:strand=>strand,:sequence=>a.seq,:quality=>a.qual})
   end
+  sam.fetch_with_function(reference, start, stop, fetchAlignment)
   sam.close
   features
 end
