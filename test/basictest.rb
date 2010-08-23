@@ -87,6 +87,30 @@ class TestBioDbSam < Test::Unit::TestCase
     assert(true, "BINARY file openend but not closed")  
   end
 
+  def test_read_coverage
+     sam       = Bio::DB::Sam.new({:bam=>@testBAMFile, :fasta=>@testReference})
+     sam.open
+  	File.open( @test_folder +"/ids2.txt", "r") do |file|
+  	  puts "file opened"
+  	  file.each_line{|line|
+        fetching = line.split(' ')[0]
+        puts "fetching: " + fetching
+  	    sam.load_reference
+    	  seq = sam.fetch_reference(fetching, 0, 16000)
+  #	  puts seq 
+  #	  puts seq.length
+  	  als = sam.fetch(fetching, 0, seq.length) 
+     #      p als
+  	  if als.length() > 0 then
+  	       p fetching
+                p als
+  	    end
+           }
+
+  	end
+    sam.close
+   assert(true, "Finish")
+  end
 #  def test_read_TAM_as_BAM
 #    begin
 #      sam                          = Bio::DB::Sam.new({:bam=>@testTAMFile})
@@ -228,6 +252,17 @@ class TestBioDbSam < Test::Unit::TestCase
     p fs
     assert(true, "Loaded as features")
   end
+  
+  def test_avg_coverage
+    sam = Bio::DB::Sam.new({:fasta=>@testReference, :bam=>@testBAMFile })
+    sam.open
+    cov = sam.average_coverage("chr_1", 60, 30)
+    p "Coverage: " + cov.to_s
+    sam.close
+    assert(true, "Average coverage ran")
+    assert(3 == cov, "The coverage is 3")
+  end
+  
 
 end
 

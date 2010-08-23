@@ -102,12 +102,38 @@ module Bio
         
       end
       
+      def average_coverage(chromosome, qstart, len)
+        reference = fetch_reference(chromosome, qstart, qstart+len)
+        len = reference.length if len > reference.length
+        #p qend.to_s + "-" + qstart.to_s + "framesize " + (qend - qstart).to_s
+        coverages = Array.new(len, 0)
+        
+        avg_proc = Proc.new do |alignment|
+          last = qstart + len
+          first = qstart
+          last = alignment.calend if last > alignment.calend
+          first = alignment.pos if first < alignment.pos
+          p first
+          first.upto(last-1) { |i|
+             coverages[first-i] = 1 + coverages[first-i] }
+        end
+        
+        fetch_with_function(chromosome, qstart, qstart+len, avg_proc)
+        p coverages
+        total = 0
+        0.upto(len-1) { |i| total= total + coverages[i] }
+        avg_cov = total.to_f / len
+        #LibC.free referemce
+        avg_cov
+      end
+      
       def fetch_reference(chromosome, qstart,qend)
-        load_reference unless @fasta_index.nil? || @fasta_index.null? 
+        load_reference if @fasta_index.nil? || @fasta_index.null? 
         query = query_string(chromosome, qstart,qend)
         len = FFI::MemoryPointer.new :int
         reference = Bio::DB::SAM::Tools.fai_fetch(@fasta_index, query, len)
         raise SAMException.new(), "Unable to get sequence for reference: "+query if reference.nil?
+        
         reference
       end
       
