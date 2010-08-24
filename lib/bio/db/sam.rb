@@ -1,4 +1,12 @@
 require 'bio/db/sam/sam'
+
+module LibC
+  extend FFI::Library
+  ffi_lib FFI::Library::LIBC
+   attach_function :free, [ :pointer ], :void
+  # call #attach_function to attach to malloc, free, memcpy, bcopy, etc.
+end
+
 module Bio
   module DB
     class Sam
@@ -91,6 +99,7 @@ module Bio
       
       def load_reference()
         raise SAMException.new(), "No path for the refernce fasta file. " if @fasta_path.nil?
+        
         @fasta_index = Bio::DB::SAM::Tools.fai_load(@fasta_path)
       
         if @fasta_index.null? then
@@ -113,17 +122,17 @@ module Bio
           first = qstart
           last = alignment.calend if last > alignment.calend
           first = alignment.pos if first < alignment.pos
-          p first
+         # p first
           first.upto(last-1) { |i|
              coverages[first-i] = 1 + coverages[first-i] }
         end
         
         fetch_with_function(chromosome, qstart, qstart+len, avg_proc)
-        p coverages
+        #p coverages
         total = 0
         0.upto(len-1) { |i| total= total + coverages[i] }
         avg_cov = total.to_f / len
-        #LibC.free referemce
+        #LibC.free reference
         avg_cov
       end
       
@@ -201,8 +210,9 @@ module Bio
          al = Bio::DB::SAM::Tools::Bam1T.new(bam_alignment) 
          
          #set the raw data
-         self.sam =  Bio::DB::SAM::Tools.bam_format1(header,al)
-         
+         tmp_str =  Bio::DB::SAM::Tools.bam_format1(header,al)
+         self.sam = String.new(tmp_str)
+         #LibC.free tmp_str
          #Set values calculated by libbam
          core = al[:core]
          cigar = al[:data][core[:l_qname]]#define bam1_cigar(b) ((uint32_t*)((b)->data + (b)->core.l_qname)) 

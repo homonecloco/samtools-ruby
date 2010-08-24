@@ -7,6 +7,7 @@ module Bio
     module SAM
       module Tools
         extend FFI::Library
+        
         ffi_lib'libbam'
         
         BAM_FPAIRED = 1
