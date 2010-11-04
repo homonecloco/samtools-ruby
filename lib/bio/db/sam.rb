@@ -180,6 +180,10 @@ module Bio
 	        0  
         end
         Bio::DB::SAM::Tools.bam_fetch(@sam_file[:x][:bam], @sam_index,chr.read_int,beg.read_int, last.read_int, nil, fetchAlignment)
+       # LibC.free chr
+        #LibC.free beg
+        #LibC.free last
+        #LibC.free qpointer
         count
       end
 
@@ -196,8 +200,20 @@ module Bio
     end
     
     class Alignment
+      
+      def initialize
+              ObjectSpace.define_finalizer(self,
+                                           self.class.method(:finalize).to_proc)
+      end
+      def Alignment.finalize(id)
+              
+             puts "Object #{id} dying at #{Time.new}"
+             p  "?" . id.al
+            LibC.free id.al
+      end
+      
        #Attributes from the format
-       attr_accessor :qname, :flag, :rname,:pos,:mapq,:cigar, :mrnm, :mpos, :isize, :seq, :qual, :tags
+       attr_accessor :qname, :flag, :rname,:pos,:mapq,:cigar, :mrnm, :mpos, :isize, :seq, :qual, :tags, :al
        #Attributes pulled with the C library
        attr_accessor  :calend, :qlen
        #Attrobites frp, the flag field (see chapter 2.2.2 of the sam file documentation)
@@ -207,7 +223,7 @@ module Bio
        
        def set(bam_alignment, header)
          #Create the FFI object
-         al = Bio::DB::SAM::Tools::Bam1T.new(bam_alignment) 
+         @al = Bio::DB::SAM::Tools::Bam1T.new(bam_alignment) 
          
          #set the raw data
          tmp_str =  Bio::DB::SAM::Tools.bam_format1(header,al)
@@ -231,6 +247,7 @@ module Bio
          @primary               = !(@flag & 0x0100 > 0)
          @failed_quality        = @flag & 0x0200 > 0
          @is_duplicate          = @flag & 0x0400 > 0
+        
        end
        
            
