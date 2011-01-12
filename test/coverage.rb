@@ -12,7 +12,10 @@ sam       = Bio::DB::Sam.new({:bam=>bam_file, :fasta=>fasta_file})
 sam.open
 File.open(chromosmes, "r") do |file|
   file.each_line{|line|
-    $stderr.puts i.to_s + " done" if i%100 == 0
+    $stderr.puts i.to_s + " done" if i%10 == 0
+    ObjectSpace.each_object(Bio::DB::Sam) {|x|  $stderr.puts x } if i%10 == 0
+    count =  ObjectSpace.each_object() {|x|  } if i%10 == 0
+    $stderr.puts count if i%10 == 0
     i = i + 1
     fetching = line.split(' ')[0]
 	  

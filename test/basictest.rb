@@ -264,6 +264,19 @@ class TestBioDbSam < Test::Unit::TestCase
   end
   
 
+  def test_chromosome_coverage
+    sam = Bio::DB::Sam.new({:fasta=>@testReference, :bam=>@testBAMFile })
+    sam.open
+    covs = sam.chromosome_coverage("chr_1", 0, 60)
+    p "Coverage: "
+    p covs
+    puts "POS\tCOV"
+    covs.each_with_index{ |cov, i| puts "#{i}\t#{cov}" }
+    sam.close
+    assert(true, "Average coverage ran")
+    #assert(3 == cov, "The coverage is 3")
+  end
+
 end
 
 class Feature 
