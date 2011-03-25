@@ -16,7 +16,7 @@ module Bio
         opts =  { :fasta => nil,  :bam => nil,:tam => nil, :compressed => true, :write => false }.merge!(optsa)
 
 
-
+        @chr_index = {}
         @fasta_path = opts[:fasta]
         @compressed = opts[:compressed]
         @write = opts[:write]
@@ -79,11 +79,12 @@ module Bio
         Bio::DB::SAM::Tools.samclose(@sam_file) unless @sam_file.nil? 
         @sam_file = nil
         @fasta_index = nil
+        @chr_index = nil
       end
 
       def Sam.finalize(id)
         id.close()
-        puts "Finalizing #{id}  at #{Time.new}"       
+        #puts "Finalizing #{id}  at #{Time.new}"       
       end
 
       def load_index()
@@ -182,17 +183,42 @@ module Bio
         als
       end  
 
-      def fetch_with_function(chromosome, qstart, qend, function)
-        load_index if @sam_index.nil? || @sam_index.null?
+
+      
+      def fetch_chr_index(chromosome)
         chr = FFI::MemoryPointer.new :int
         beg = FFI::MemoryPointer.new :int
         last = FFI::MemoryPointer.new :int
-        query = query_string(chromosome, qstart,qend)
-        qpointer = FFI::MemoryPointer.from_string(query)
+        
         header = @sam_file[:header]
+        
+        query = query_string(chromosome, 1,2)
+        qpointer = FFI::MemoryPointer.from_string(query)
         Bio::DB::SAM::Tools.bam_parse_region(header,qpointer, chr, beg, last) 
-        #raise SAMException.new(), "invalid query: " + query  if(chr.read_int < 0)
+        raise SAMException.new(), "invalid chromosome: " + chromosome  if(chr.read_int < 0)
+        @chr_index[chromosome] = chr.read_int
+        @chr_index[chromosome]
+      end
+
+      def get_chr_index(chromosome)
+         load_index if @sam_index.nil? || @sam_index.null?
+         fetch_chr_index(chromosome) unless @chr_index[chromosome]
+         @chr_index[chromosome]
+      end
+
+      #Accepts an index already parsed by the library. It fails when you use your own FixNum
+      def fetch_with_function(chromosome, qstart, qend, function)
+        tmp = "chromosome.class: " + chromosome.class.to_s
+        p tmp
+        chr_i = chromosome if chromosome.instance_of?(Fixnum)
+        chr_i = get_chr_index(chromosome) unless chromosome.instance_of?(Fixnum)
+        p "chr_i.class: " + chr_i.class.to_s
+         p "chr_i: " + chr_i.to_s
+        header = @sam_file[:header]
+        
         count = 0;
+        
+        #p query + " " + chr.read_int.to_s + " " + beg.read_int.to_s + " " +  last.read_int.to_s
 
         fetchAlignment = Proc.new do |bam_alignment, data|
           alignment =  Alignment.new
@@ -201,7 +227,9 @@ module Bio
           count = count + 1
           0  
         end
-        Bio::DB::SAM::Tools.bam_fetch(@sam_file[:x][:bam], @sam_index,chr.read_int,beg.read_int, last.read_int, nil, fetchAlignment)
+       
+        Bio::DB::SAM::Tools.bam_fetch(@sam_file[:x][:bam], @sam_index,chr_i,qstart, qend, nil, fetchAlignment)
+        #Bio::DB::SAM::Tools.bam_fetch(@sam_file[:x][:bam], @sam_index,chr.read_int,beg.read_int, last.read_int, nil, fetchAlignment)
         #LibC.free chr
         #LibC.free beg
         #LibC.free last

@@ -165,6 +165,17 @@ class TestBioDbSam < Test::Unit::TestCase
     assert(true, "Seems it ran the query")
     #node_7263       238     60 has 550+, query from 0 to 500, something shall come.... 
   end
+  
+  def test_read_segment_from_index
+    sam       = Bio::DB::Sam.new({:bam=>@testBAMFile})
+    sam.open
+    ind = sam.get_chr_index("chr_1")
+    als = sam.fetch(ind, 0, 500)
+    p als 
+    sam.close
+    assert(true, "Seems it ran the query")
+    #node_7263       238     60 has 550+, query from 0 to 500, something shall come.... 
+  end
 
   def test_read_invalid_reference
     sam       = Bio::DB::Sam.new({:bam=>@testBAMFile})
