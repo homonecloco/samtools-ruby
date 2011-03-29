@@ -11,11 +11,12 @@ module Bio
   module DB
     class Sam
       attr_reader :sam_file
-
+      attr_accessor :sort_mem_size
+      
       def initialize(optsa={})
         opts =  { :fasta => nil,  :bam => nil,:tam => nil, :compressed => true, :write => false }.merge!(optsa)
 
-
+        @sort_mem_size = 500000000
         @chr_index = {}
         @fasta_path = opts[:fasta]
         @compressed = opts[:compressed]
@@ -235,6 +236,12 @@ module Bio
         #LibC.free last
         #LibC.free qpointer
         count
+      end
+      
+      #void bam_sort_core_ext(int is_by_qname, const char *fn, const char *prefix, size_t max_mem, int is_stdout)
+      def sort(prefix, is_by_qname)
+        Bio::DB::SAM::Tools.bam_sort_core_ext(is_by_qname, @sam, prefix, @sort_mem_size, 0)
+        
       end
 
     end

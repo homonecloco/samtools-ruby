@@ -287,6 +287,12 @@ class TestBioDbSam < Test::Unit::TestCase
     assert(true, "Average coverage ran")
     #assert(3 == cov, "The coverage is 3")
   end
+  
+  def test_sort
+     sam = Bio::DB::Sam.new({:fasta=>@testReference, :bam=>@testBAMFile })
+     sam.sort(@testBAMFile + "_sorted", 0)
+     sam.sort(@testBAMFile + "_sorted_by_name", 1)
+  end
 
 end
 
