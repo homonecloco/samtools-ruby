@@ -10,7 +10,7 @@ end
 module Bio
   module DB
     class Sam
-      attr_reader :sam_file
+      attr_reader :sam_file, :chr_index
       attr_accessor :sort_mem_size
       
       def initialize(optsa={})
@@ -238,12 +238,26 @@ module Bio
         count
       end
       
-      #void bam_sort_core_ext(int is_by_qname, const char *fn, const char *prefix, size_t max_mem, int is_stdout)
-      def sort(prefix, is_by_qname)
-        Bio::DB::SAM::Tools.bam_sort_core_ext(is_by_qname, @sam, prefix, @sort_mem_size, 0)
-        
+      #void bam_sort_core_ext(int void bam_merge_core(int by_qname, const char *out, const char *headers, int n, char * const *fn, int add_RG), const char *fn, const char *prefix, size_t max_mem, int is_stdout)
+      def sort(prefix, by_qname)
+        Bio::DB::SAM::Tools.bam_sort_core_ext(by_qname, @sam, prefix, @sort_mem_size, 0)
       end
+      
+      #void bam_merge_core(int by_qname, const char *out, const char *headers, int n, char * const *fn, int add_RG)
+      def self.merge(files, merged_file, headers, add_RG, by_qname)
+        strptrs = []
+        files.each do |file|
+          strptrs << FFI::MemoryPointer.from_string(file)
+        end
+        strptrs << nil
 
+        # Now load all the pointers into a native memory block
+        argv = FFI::MemoryPointer.new(:pointer, strptrs.length)
+        strptrs.each_with_index do |p, i|
+           argv[i].put_pointer(0,  p)
+        end
+        Bio::DB::SAM::Tools.bam_merge_core(by_qname, merged_file, headers, strptrs.length, argv, add_RG)
+      end
     end
 
     class Tag

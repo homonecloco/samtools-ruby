@@ -274,6 +274,18 @@ class TestBioDbSam < Test::Unit::TestCase
     assert(3 == cov, "The coverage is 3")
   end
   
+  def test_avg_coverage_cached_name
+    sam = Bio::DB::Sam.new({:fasta=>@testReference, :bam=>@testBAMFile })
+    sam.open
+    sam.fetch_chr_index("chr_1")
+    sam.fetch_chr_index("chr_1")
+   # p "The index for chr_1: " + ind.to_s
+    cov = sam.average_coverage("chr_1", 60, 30)
+    p "Coverage: " + cov.to_s
+    sam.close
+    assert(true, "Average coverage ran")
+    assert(3 == cov, "The coverage is 3")
+  end
 
   def test_chromosome_coverage
     sam = Bio::DB::Sam.new({:fasta=>@testReference, :bam=>@testBAMFile })
@@ -284,14 +296,26 @@ class TestBioDbSam < Test::Unit::TestCase
     puts "POS\tCOV"
     covs.each_with_index{ |cov, i| puts "#{i}\t#{cov}" }
     sam.close
-    assert(true, "Average coverage ran")
+    assert(true, "Chromosome coverage ran")
     #assert(3 == cov, "The coverage is 3")
   end
+  
+  
   
   def test_sort
      sam = Bio::DB::Sam.new({:fasta=>@testReference, :bam=>@testBAMFile })
      sam.sort(@testBAMFile + "_sorted", 0)
      sam.sort(@testBAMFile + "_sorted_by_name", 1)
+     assert(true, "Sorted bam file test ran.")
+  end
+  
+  def test_merge
+     #(files, merged_file, headers, add_RG, by_qname)
+     files = []
+     files[0] = @testBAMFile
+     files[1] = @testBAMFile
+    # Bio::DB::Sam.merge(files, "merged.bam", files[0], 0, 0)
+    # assert(true, "Sorted bam file test ran.")
   end
 
 end
