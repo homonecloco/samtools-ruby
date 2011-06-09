@@ -1,27 +1,13 @@
-#
-#  sam.rb
-#  
-#
-#  Created by Ricardo Ramirez on 3/25/10.
-#
 require 'rubygems'
 require'ffi'
 require 'bio/db/sam/bam'
+# This module is a direct mapping of sam.h from the samtools library
 module Bio
   module DB
     module SAM
       module Tools
         extend FFI::Library
         ffi_lib'libbam'
-
-#        typedef struct {
-#        	int32_t n_targets;
-#        	char **target_name;
-#        	uint32_t *target_len;
-#        	void *dict, *hash, *rg2lib;
-#        	int l_text;
-#        	char *text;
-#        } bam_header_t;
         class BamHeaderT < FFI::Struct
           layout(
           :n_targets, :int32_t,
@@ -50,21 +36,11 @@ module Bio
           :tamw, :pointer #Text file, write. 
           )
         end
-#        typedef struct {
-#        	int type;
-#        	union {
-#        		tamFile tamr;
-#        		bamFile bam;
-#        		FILE *tamw;
-#        	} x;
-#        	bam_header_t *header;
-#        } samfile_t;
         class SamfileT < FFI::Struct
           layout(
           :type, :int,          
           :x, SamfileTX,
           :header, :pointer
-          #:header, BamHeaderT
           )
         end
         
@@ -80,3 +56,4 @@ module Bio
     end
   end
 end
+

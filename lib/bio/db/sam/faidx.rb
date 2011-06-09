@@ -1,6 +1,7 @@
 require 'rubygems'
 require'ffi'
 require 'bio/db/sam/bam'
+# This module is a direct mapping of faidx.h from the samtools library
 module Bio
   module DB
     module SAM

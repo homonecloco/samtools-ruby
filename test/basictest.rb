@@ -30,17 +30,15 @@ class TestBioDbSam < Test::Unit::TestCase
     end
   end
 
-  def default_test
-    puts $LOAD_PATH
-    assert(true, "Unit test test")
-  end
 
+  #Test just opens and close a sam file for reading, from the low level API. 
   def test_openSAMFile
     bamfile                      = Bio::DB::SAM::Tools.samopen(@testTAMFile,"r",nil)
     Bio::DB::SAM::Tools.samclose(bamfile)
     assert(true, "file open and closed")
   end
 
+  #Tests that an Exception is thrown when no parameters are given. 
   def test_new_class_empty
     begin
       bam                        = Bio::DB::Sam.new({})
@@ -51,6 +49,7 @@ class TestBioDbSam < Test::Unit::TestCase
     end
   end
 
+  #Tests that an Exception is thrown when the bam file doesn't exists
   def test_new_class_empty_invalid_path
     begin
       sam                        = Bio::DB::Sam.new({:bam=>"INVALID"})
@@ -63,13 +62,16 @@ class TestBioDbSam < Test::Unit::TestCase
     end
   end
 
+  #Testst that you can open and close without a fasta file. 
   def test_class_text_read_no_faidx
     sam                          = Bio::DB::Sam.new({:tam=>@testTAMFile})
     sam.open
     sam.close
     assert(true, "file open and closed with the class")
   end
-
+  
+  #Tests what happens when a bam file is garbage collected. The object is destroyed. Used with flags
+  #it shows that the file is closed prior the garbage colletion. 
   def test_class_text_read_no_close
 
     fam                          = Bio::DB::Sam.new({:tam=>@testTAMFile})
@@ -80,13 +82,15 @@ class TestBioDbSam < Test::Unit::TestCase
     assert(true, "file openend but not closed")
   end
 
+  #Tests what happens when a tam file is garbage collected. The object is destroyed. Used with flags
+   #it shows that the file is closed prior the garbage colletion.
   def test_class_binary_read_no_close
-
     Bio::DB::Sam.new({:bam=>@testBAMFile}).open
     ObjectSpace.garbage_collect
     assert(true, "BINARY file openend but not closed")  
   end
 
+  #Tests that the coverage is readed for the whole chromosme. 
   def test_read_coverage
      sam       = Bio::DB::Sam.new({:bam=>@testBAMFile, :fasta=>@testReference})
      sam.open
@@ -97,20 +101,20 @@ class TestBioDbSam < Test::Unit::TestCase
         puts "fetching: " + fetching
   	    sam.load_reference
     	  seq = sam.fetch_reference(fetching, 0, 16000)
-  #	  puts seq 
-  #	  puts seq.length
-  	  als = sam.fetch(fetching, 0, seq.length) 
+  	    als = sam.fetch(fetching, 0, seq.length) 
      #      p als
   	  if als.length() > 0 then
   	       p fetching
                 p als
   	    end
-           }
+      }
 
   	end
     sam.close
    assert(true, "Finish")
   end
+  
+
 #  def test_read_TAM_as_BAM
 #    begin
 #      sam                          = Bio::DB::Sam.new({:bam=>@testTAMFile})
@@ -133,17 +137,16 @@ class TestBioDbSam < Test::Unit::TestCase
 #    end 
 #  end
 
+#Tests that the index is created
   def test_bam_load_index
     sam       = Bio::DB::Sam.new({:bam=>@testBAMFile})
     sam.open
     index = sam.load_index
     sam.close
     assert(true, "BAM index loaded")
-    #  attach_function :bam_index_build, [ :string ], :int
-    #  attach_function :bam_index_load, [ :string ], :pointer
-    #  attach_function :bam_index_destroy, [ :pointer ], :void
   end
 
+#Tests that the TAM file can't be used, since it can't be indexed
   def test_tam_load_index
     begin
       sam       = Bio::DB::Sam.new({:tam=>@testTAMFile})
@@ -156,6 +159,7 @@ class TestBioDbSam < Test::Unit::TestCase
     end
   end
 
+#Tests that a segment fo the chromosme is readed correctly. 
   def test_read_segment
     sam       = Bio::DB::Sam.new({:bam=>@testBAMFile})
     sam.open
@@ -166,6 +170,8 @@ class TestBioDbSam < Test::Unit::TestCase
     #node_7263       238     60 has 550+, query from 0 to 500, something shall come.... 
   end
   
+  
+  #Testst that you can fetch a segment from a preparsed index. 
   def test_read_segment_from_index
     sam       = Bio::DB::Sam.new({:bam=>@testBAMFile})
     sam.open
@@ -177,6 +183,7 @@ class TestBioDbSam < Test::Unit::TestCase
     #node_7263       238     60 has 550+, query from 0 to 500, something shall come.... 
   end
 
+  #Tests that an exception is thrown when the chromosome is not a valid chromosome. 
   def test_read_invalid_reference
     sam       = Bio::DB::Sam.new({:bam=>@testBAMFile})
     sam.open
@@ -191,6 +198,7 @@ class TestBioDbSam < Test::Unit::TestCase
     end
   end
 
+  #Testst that the coordinate system is valid (can't start from a negative coordinate)
   def test_read_invalid_reference_start_coordinate
     sam       = Bio::DB::Sam.new({:bam=>@testBAMFile})
     sam.open
@@ -205,6 +213,7 @@ class TestBioDbSam < Test::Unit::TestCase
     end
   end
 
+ #Tests that the query fails when the chromosome doesnt exist and the coordiate is invalid. 
   def test_read_invalid_reference_end_coordinate
     sam       = Bio::DB::Sam.new({:bam=>@testBAMFile})
     sam.open
@@ -219,6 +228,7 @@ class TestBioDbSam < Test::Unit::TestCase
     end
   end
   
+  #Tests that an exception is thrown whenver the coordinates are not from left to right. 
   def test_read_invalid_reference_swaped_coordinates
     sam       = Bio::DB::Sam.new({:bam=>@testBAMFile})
     sam.open
@@ -233,6 +243,7 @@ class TestBioDbSam < Test::Unit::TestCase
     end
   end
 
+  #Test the load of the fasta index. 
   def test_fasta_load_index
     sam = Bio::DB::Sam.new({:fasta=>@testReference})
     sam.load_reference
@@ -242,7 +253,8 @@ class TestBioDbSam < Test::Unit::TestCase
     assert(true, "The reference was loaded")
   end
   
-  def test_fasta_load_index
+  #Test that an exeption is thrown when the chromosome is invalid 
+  def test_fasta_load_invalid_index
     sam = Bio::DB::Sam.new({:fasta=>@testReference})
     sam.load_reference
     begin
@@ -256,14 +268,14 @@ class TestBioDbSam < Test::Unit::TestCase
     end
   end
   
+  #Tests that a feature is loaded, by mapping to a new object outside the library
   def test_load_feature
-    
     fs = Feature.find_by_bam("chr_1", 0, 500,@testBAMFile)
-    
     p fs
     assert(true, "Loaded as features")
   end
   
+  #Tests the average coverage function
   def test_avg_coverage
     sam = Bio::DB::Sam.new({:fasta=>@testReference, :bam=>@testBAMFile })
     sam.open
@@ -274,12 +286,13 @@ class TestBioDbSam < Test::Unit::TestCase
     assert(3 == cov, "The coverage is 3")
   end
   
+  #Test that the average coverage is run with a prefetched index. 
   def test_avg_coverage_cached_name
     sam = Bio::DB::Sam.new({:fasta=>@testReference, :bam=>@testBAMFile })
     sam.open
     sam.fetch_chr_index("chr_1")
-    sam.fetch_chr_index("chr_1")
-   # p "The index for chr_1: " + ind.to_s
+  
+    p "The index for chr_1: " + ind.to_s
     cov = sam.average_coverage("chr_1", 60, 30)
     p "Coverage: " + cov.to_s
     sam.close
@@ -287,6 +300,7 @@ class TestBioDbSam < Test::Unit::TestCase
     assert(3 == cov, "The coverage is 3")
   end
 
+  #Thests the coverage for each possition in the coverage
   def test_chromosome_coverage
     sam = Bio::DB::Sam.new({:fasta=>@testReference, :bam=>@testBAMFile })
     sam.open
@@ -302,24 +316,26 @@ class TestBioDbSam < Test::Unit::TestCase
   
   
   
+  #Test the sortinf BAM function. 
   def test_sort
      sam = Bio::DB::Sam.new({:fasta=>@testReference, :bam=>@testBAMFile })
      sam.sort(@testBAMFile + "_sorted", 0)
      sam.sort(@testBAMFile + "_sorted_by_name", 1)
      assert(true, "Sorted bam file test ran.")
   end
-  
+  #Test that merging works (we still have an excption. I think it works with the latest samtools library, but i have to recompile it with debugging options to be sure)
   def test_merge
      #(files, merged_file, headers, add_RG, by_qname)
      files = []
      files[0] = @testBAMFile
      files[1] = @testBAMFile
-    # Bio::DB::Sam.merge(files, "merged.bam", files[0], 0, 0)
-    # assert(true, "Sorted bam file test ran.")
+     #Bio::DB::Sam.merge(files, "merged.bam", files[0], 0, 0)
+     #assert(true, "Sorted bam file test ran.")
   end
 
 end
 
+#Test simplified feature to test that you can transform fromt he default alignment objects to a different mapping
 class Feature 
 attr_reader :start, :end, :strand, :sequence, :quality
 

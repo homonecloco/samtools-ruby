@@ -2,6 +2,7 @@ require 'rubygems'
 require'ffi'
 require 'bio/db/sam/faidx'
 require 'bio/db/sam/sam'
+# This module is a direct mapping of bam.h from the samtools library
 module Bio
   module DB
     module SAM
@@ -143,21 +144,14 @@ module Bio
         attach_function :bam_calend, [ :pointer, :pointer ], :uint32
         attach_function :bam_cigar2qlen, [ :pointer, :pointer ], :int32_t
         
-        #section with the cod to attach the samtools applications
+        #section with the code to attach the samtools applications
+        
         #void bam_sort_core_ext(int is_by_qname, const char *fn, const char *prefix, size_t max_mem, int is_stdout)
         attach_function :bam_sort_core_ext,[:int32_t, :string, :string, :size_t, :int32_t], :void
         #void bam_merge_core(int by_qname, const char *out, const char *headers, int n, char * const *fn, int add_RG)
         attach_function :bam_merge_core, [:int, :string, :string, :int , :pointer, :int], :void
         
-        #FIXME: if we see that we need this function, implement it on ruby, seems like FFI is having problems with
-        #te static inline.
-        #attach_function :bam_reg2bin, [ :uint32, :uint32 ], :int
-        #FIXME: if we see that we need this function, implement it on ruby, seems like FFI is having problems with
-        #te static inline.
-        #attach_function :bam_copy1, [ :pointer, :pointer ], :pointer
-        #FIXME: if we see that we need this function, implement it on ruby, seems like FFI is having problems with
-        #te static inline.
-        #attach_function :bam_dup1, [ :pointer ], :pointer
+        
       end
     end
   end
