@@ -290,7 +290,7 @@ class TestBioDbSam < Test::Unit::TestCase
   def test_avg_coverage_cached_name
     sam = Bio::DB::Sam.new({:fasta=>@testReference, :bam=>@testBAMFile })
     sam.open
-    sam.fetch_chr_index("chr_1")
+    ind = sam.fetch_chr_index("chr_1")
   
     p "The index for chr_1: " + ind.to_s
     cov = sam.average_coverage("chr_1", 60, 30)

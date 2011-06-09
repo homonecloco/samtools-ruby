@@ -82,7 +82,10 @@ module Bio
       #Prints a description of the sam file in a text format containg if it is binary or text, the path
       #and the fasta file of the reference
       def to_s()
-        (@binary ? "Binary" : "Text") + " file: " + @sam + " with fasta: " + @fasta_path
+        string = "SAM FIle: "
+        string = string + (@binary ? "Binary" : "Text") + " file: " + @sam if @sam
+        string =  " with fasta: " + @fasta_path if @fasta_path;
+        string
       end
 
       #Closes the sam file and destroys the C pointers using the functions provided by libbam
